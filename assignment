@@ -1,0 +1,114 @@
+.data
+	words: .asciiz "Alpha","Bravo","China","Delta","Echo","Foxtrot","Golf","Hotel","India","Juliet","Kilo","Lima","Mary", "November", "Oscar","Paper","Quebec","Research","Sierra","Tango","Uniform","Victor","Whisky","X-ray","Yankee","Zulu"
+	shift_word: .word 0, 6, 12, 18, 24, 29, 37, 42, 48, 54, 61, 66, 71, 76, 85, 91, 97, 104, 113, 120, 126, 134, 141, 148, 154, 161
+	numbers: .asciiz "zero","First","Second","Third","Fourth","Fifth","Sixth","Seventh","Eighth", "Ninth"
+	shift_number: .word 0, 5, 11, 18, 24, 31, 37, 43, 51, 58
+	breakline: .asciiz "\n"
+.text
+	
+	while:
+		# get user input char from keyboard:
+		li $v0, 12
+		syscall
+	
+	# 1 branch break the loop:	
+		move $t0, $v0
+		li $t1, 63 # ascii code of char "?"
+		beq $t1, $t0, exit # break? seems a keyword of mips
+	# * execute if branch 1 does not occured	
+		
+		# set $v0 as a flag to see if input char is what we want:
+		li $v0, 0
+		
+		# check if the char is between A ~Z
+		jal if_upper_case
+		
+		# check if the char is between 0 ~9
+		jal if_Number
+		
+		# check if the char is between a ~z
+		jal if_lower_case
+	
+		# if $t4 register has been used means input is between A ~Z or a ~z or 0 ~9 pass next 3 lines of code 
+		bnez $v0, char_matched
+		# otherwise, print char " * "
+		li $v0, 11
+		li $a0, 42
+		syscall
+		
+		char_matched:	
+			jal breakLine  
+
+		
+	# 2 branch while continue		
+		j while # loop back to while subroutine untill it gets char "?"
+
+	if_upper_case:
+		blt $t0, 65, pass_W
+		bgt $t0, 90, pass_W	# if $t1 == 0, the char is not between A ~Z
+		
+		subi $t4, $t0, 65
+		la $t1, shift_word
+		sll $t4, $t4, 2 	# cz int stored in memory as a Byte (4 bytes) shift left 2 bits  ==  multiply it by 4
+		add $t1, $t1, $t4
+		lw $t1, ($t1) 	# $t1 == word location in the memory
+		la $a0, words
+		add $a0, $a0, $t1
+		# print Word
+		li $v0, 4
+		syscall	
+		
+		pass_W:
+			jr $ra
+	if_Number:
+		blt $t0, 48, pass_N
+		bgt $t0, 57, pass_N
+		
+		subi $t4, $t0, 48
+		la $t1, shift_number # address
+		sll, $t4, $t4, 2
+		add $t1, $t1, $t4 # shifted address
+		lw $t1, ($t1) # shifted address's shifted number
+		
+		la $a0, numbers
+		add $a0, $a0, $t1
+		# print Word
+		li $v0, 4
+		syscall
+		
+		pass_N:
+			jr $ra
+	if_lower_case:
+		blt $t0, 97, pass_w
+		bgt $t0, 122, pass_w	
+
+		# print lowercase letter of the word:	
+		li $v0, 11 
+		move $a0, $t0
+		syscall
+	
+		subi $t4, $t0, 97
+		la $t1, shift_word
+		sll $t4, $t4, 2
+		add $t1, $t1, $t4
+		lw $t1, ($t1) 	# $t1 == word location in the memory
+		la $a0, words
+		add $a0, $a0, $t1
+		addi $a0, $a0, 1
+		# print Word
+		li $v0, 4
+		syscall		
+			
+		pass_w:
+			jr $ra
+		
+	
+	exit: # exit when input equals to 63 (?)
+		li $v0, 10
+		syscall
+	 
+	breakLine:
+		li $v0, 4
+		la $a0, breakline
+		syscall	
+		jr $ra

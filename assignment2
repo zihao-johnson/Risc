@@ -1,0 +1,71 @@
+.data
+	string: .space 50
+	fail: .asciiz "Fail!"
+	prompt_0: .asciiz "Please enter your string from keyboard (at most 50):\n"
+	prompt_1: .asciiz "\nPlease enter a character from your keyboard: "
+	prompt_2: .asciiz "\nThe location of the char is: "
+.text
+	# ------------------------------------------ input string --------------------------------------
+	li $v0, 4
+	la $a0, prompt_0
+	syscall
+	
+	li $v0, 8
+	la $a0, string
+	li $a1, 50
+	syscall
+	# ----------------------------------------------------------------------------------------------
+
+
+	# ----------- function of recursively get input char and find its location of string -----------
+	input_again:
+		li $v0, 4
+		la $a0, prompt_1
+		syscall
+	
+		li $v0, 12
+		syscall
+		li $t0, 63
+		beq $v0, $t0, exit
+		# otherwise do:
+
+	# ---------------------------- Procedure of recursively search the char's location--------------
+		
+		move $t0, $v0
+		li $t1, 50
+		li $t2, 0
+		
+		while:
+			# if $t2 > $t1: break
+			bgt $t2, $t1, fail_found
+		
+			# else: continue loop and execurte some code...
+		
+			la $a0, string 
+			add $a0, $a0, $t2
+			lb $t3, ($a0)
+			# if found it, go to print the location that first appeared:
+			beq $t3, $t0, found
+			# else: back to next stage of loop
+			addi $t2, $t2, 1
+			add $a0, $a0, $t2
+			j while
+			
+			found:
+				li $v0, 4
+				la $a0, prompt_2
+				syscall
+				
+				li $v0, 1
+				move $a0, $t2
+				syscall 
+				j input_again
+			
+			fail_found:
+				li $v0, 4
+				la $a0, fail
+				syscall
+	exit:
+		li $v0, 10
+		syscall
+	# ----------------------------------------------------------------------------------------------
